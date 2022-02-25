@@ -3,8 +3,11 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
 
 
 ## Current Layout
-![pixil-frame-0(3)](https://user-images.githubusercontent.com/30498489/155784806-4140f807-80ad-4bb5-af04-aa672b66019f.png)
+![VID_20220225_200431_01 (online-video-cutter com)](https://user-images.githubusercontent.com/30498489/155799221-f548ad4e-659d-454c-8de0-429894b17fa8.gif)
 
+## Goal Layout
+![pixil-frame-0(3)](https://user-images.githubusercontent.com/30498489/155784806-4140f807-80ad-4bb5-af04-aa672b66019f.png)
+	
 ## Feature List
 - [x] Research time/ date API.
   - [x] Get time/ date API working.
