@@ -1,8 +1,11 @@
 # LED Bulletin Board
-ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news, affirmation & tasks.                                                                                                
-                                                                                                      
-## Feature List
+ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news, affirmation & tasks.
 
+
+## Current Layout
+![pixil-frame-0(3)](https://user-images.githubusercontent.com/30498489/155784806-4140f807-80ad-4bb5-af04-aa672b66019f.png)
+
+## Feature List
 - [x] Research time/ date API.
   - [x] Get time/ date API working.
     - [x] Display current time & date on the panel.
@@ -24,7 +27,3 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
 	- [ ] Add animations counting down the time left to complete a task.
 	- [ ] Decide on whether to randomise tasks or have a schedule.
 		- [ ] Implement Decision. 
-
-
-## Current Layout
-![pixil-frame-0(3)](https://user-images.githubusercontent.com/30498489/155784806-4140f807-80ad-4bb5-af04-aa672b66019f.png)
