@@ -32,6 +32,7 @@
 void core0Loop(void *unused);
 void core1Loop(void *unused);
 void causeTime();
+void drawDateAndTimeChars();
 void printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCursorCol, const uint8_t knClearCol);
 void inline printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCol);
 void printRainbowBitmap(const unsigned char bitmap[], const uint16_t nCycles);
@@ -176,19 +177,14 @@ void setup()
 //    for (double i = 0.0; i <= nCircuit; i = i + nFraction) {
 //        removeCircularSegment(0U, 8U, 16U, 16U, i);
 //    }
-    printRainbowBitmap(lunch_time_bitmap, 128U);
+//    printRainbowBitmap(lunch_time_bitmap, 128U);
 
     /* Blanking & Text configuration */
     matrix.fillScreen(nBlack);
     matrix.setTextSize(1);     // size 1 == 8 pixels high
     matrix.setTextWrap(false); // Don't wrap at end of line - will do ourselves
 
-    /* Draw date '|' character */
-    matrix.drawLine(TEXT_WIDTH*2U, 0U, TEXT_WIDTH*2U, TEXT_HEIGHT-1U, nYellow);
-    /* Draw time ':' character */
-    matrix.setTextColor(nCyan);
-    matrix.setCursor(64 - TEXT_WIDTH*3U+2, ROW_0);
-    matrix.print(":");
+    drawDateAndTimeChars();
 
     /*Syntax for assigning task to a core:
    xTaskCreatePinnedToCore(
@@ -240,6 +236,20 @@ void causeTime()
     setDateAndTime();
 }
 
+void drawDateAndTimeChars()
+{
+    /* Gain exclusive access to the matrix */
+    xSemaphoreTake(oMatrixMutex, portMAX_DELAY);
+    /* Draw date '|' character */
+    matrix.drawLine(TEXT_WIDTH*2U, 0U, TEXT_WIDTH*2U, TEXT_HEIGHT-1U, nYellow);
+    /* Draw time ':' character */
+    matrix.setTextColor(nCyan);
+    matrix.setCursor(64 - TEXT_WIDTH*3U+2, ROW_0);
+    matrix.print(":");
+    /* Relinquish exclusive access to the matrix */
+    xSemaphoreGive(oMatrixMutex);
+}
+
 void printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCursorCol, const uint8_t knClearCol)
 {
     /* Gain exclusive access to the matrix */
@@ -249,7 +259,7 @@ void printToScreen(const String ksMessage, const uint16_t knColour, const uint8_
     matrix.fillRect(knClearCol, knRow, TEXT_WIDTH*knNumChars, TEXT_HEIGHT, nBlack);
     /* Position the cursor at the input position & print message */
     matrix.setCursor(knCursorCol, knRow);
-    matrix.print(LengthenStrings(ksMessage));
+    matrix.print(ksMessage);
     /* Relinquish exclusive access to the matrix */
     xSemaphoreGive(oMatrixMutex);
 }
@@ -348,34 +358,71 @@ void setDateAndTime()
     sNewMin   = doc["minute"].as<int>();
     sNewDoW   = doc["dayOfWeek"].as<char*>();
 
-    if (compareStrings(sPreviousDay, sNewDay) != 0U)
+    /* Work's Done! */
+    if ((sNewHour == "17") && (sNewMin == "30") && (sNewDoW[0] != 'S'))
     {
-        /* Blank & set the day zone */
-        printToScreen(sNewDay, nYellow, 2U, ROW_0, 0U);
-        /* Update the saved value */
+        /* Blank the screen & print the celebration */
+        matrix.fillScreen(nBlack);
+        printRainbowBitmap(youre_done_bitmap, 300U);
+        /* Blank the screen & reprint the current date & time */
+        matrix.fillScreen(nBlack);
+        drawDateAndTimeChars();
+        printToScreen(LengthenStrings(sNewDay), nYellow, 2U, ROW_0, 0U);
+        printToScreen(LengthenStrings(sNewMonth), nYellow, 2U, ROW_0, TEXT_WIDTH*3U-4U);
+        printToScreen(LengthenStrings(sNewHour), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*5U+4);
+        printToScreen(LengthenStrings(sNewMin), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*2U);
+        /* Update stored variables */
         sPreviousDay = sNewDay;
-    }
-    if (compareStrings(sPreviousMonth, sNewMonth) != 0U)
-    {
-        /* Blank & set the month zone */
-        printToScreen(sNewMonth, nYellow, 2U, ROW_0, TEXT_WIDTH*3U-4U);
-        /* Update the saved value */
         sPreviousMonth = sNewMonth;
-    }
-
-    if (compareStrings(sPreviousHour, sNewHour) != 0U)
-    {
-        /* Blank & set the hour zone */
-        printToScreen(sNewHour, nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*5U+4);
-        /* Update the saved value */
         sPreviousHour = sNewHour;
-    }
-    if (compareStrings(sPreviousMin, sNewMin) != 0U)
-    {
-        /* Blank & set the minute zone */
-        printToScreen(sNewMin, nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*2U);
-        /* Update the saved value */
         sPreviousMin = sNewMin;
+    }
+    /* Lunch time! */
+    else if ((sNewHour == "13") && (sNewMin == "0"))
+    {
+        /* Blank the screen & print the celebration */
+        matrix.fillScreen(nBlack);
+        printRainbowBitmap(lunch_time_bitmap, 300U);
+        /* Blank the screen & reprint the current date & time */
+        matrix.fillScreen(nBlack);
+        drawDateAndTimeChars();
+        printToScreen(LengthenStrings(sNewDay), nYellow, 2U, ROW_0, 0U);
+        printToScreen(LengthenStrings(sNewMonth), nYellow, 2U, ROW_0, TEXT_WIDTH*3U-4U);
+        printToScreen(LengthenStrings(sNewHour), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*5U+4);
+        printToScreen(LengthenStrings(sNewMin), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*2U);
+        /* Update stored variables */
+        sPreviousDay = sNewDay;
+        sPreviousMonth = sNewMonth;
+        sPreviousHour = sNewHour;
+        sPreviousMin = sNewMin;
+    }
+    else {
+        /* Regular update of date & time */
+        if (compareStrings(sPreviousDay, sNewDay) != 0U) {
+            /* Blank & set the day zone */
+            printToScreen(LengthenStrings(sNewDay), nYellow, 2U, ROW_0, 0U);
+            /* Update the saved value */
+            sPreviousDay = sNewDay;
+        }
+        if (compareStrings(sPreviousMonth, sNewMonth) != 0U) {
+            /* Blank & set the month zone */
+            printToScreen(LengthenStrings(sNewMonth), nYellow, 2U, ROW_0, TEXT_WIDTH * 3U - 4U);
+            /* Update the saved value */
+            sPreviousMonth = sNewMonth;
+        }
+
+        if (compareStrings(sPreviousHour, sNewHour) != 0U) {
+            /* Blank & set the hour zone */
+            printToScreen(LengthenStrings(sNewHour), nCyan, 2U, ROW_0, 64U - TEXT_WIDTH * 5U + 4);
+            /* Update the saved value */
+            sPreviousHour = sNewHour;
+        }
+        if (compareStrings(sPreviousMin, sNewMin) != 0U) {
+            /* Blank & set the minute zone */
+            printToScreen(LengthenStrings(sNewMin), nCyan, 2U, ROW_0, 64U - TEXT_WIDTH * 2U);
+            /* Update the saved value */
+            sPreviousMin = sNewMin;
+        }
     }
 }
 
