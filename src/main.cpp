@@ -19,10 +19,16 @@
 #define TEXT_HEIGHT     8U
 /* Inversely proportional to the speed of the moving text */
 #define CAROUSEL_DELAY  15U
+/* Converter for milliseconds */
+#define MILLI_SECOND    1000U
 /* One Milli-minute (60 seconds in milliseconds)*/
 #define MILLI_MINUTE    60000U
-/* Converter for milliseconds */
-#define MILLI           1000U
+/* One Milli-hour (60 minutes in milliminutes)*/
+#define MILLI_HOUR      3600000U
+/* 08:00 in milliseconds */
+#define EIGHT_AM        28800000U
+/* 23:00 in milliseconds */
+#define ELEVEN_PM       82800000U
 /* 100 millisecond padding for API calls */
 #define API_PADDING     100U
 
@@ -32,12 +38,14 @@
 void core0Loop(void *unused);
 void core1Loop(void *unused);
 void causeTime();
+void causeNightTime();
 void drawDateAndTimeChars();
 void printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCursorCol, const uint8_t knClearCol);
 void inline printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCol);
 void printRainbowBitmap(const unsigned char bitmap[], const uint16_t nCycles);
 long HSBtoRGB(float _hue);
 void setDateAndTime();
+void blankAndDrawTime();
 uint8_t compareStrings(String Str1, String Str2);
 String LengthenStrings(String Str1);
 void cycleMessage(const String ksMessage, const uint8_t knRow, const uint32_t knTextDelay);
@@ -111,18 +119,20 @@ const unsigned char* all_bitmaps_array[2] =
     lunch_time_bitmap
 };
 
-const String tasks_array[10] =
+const String tasks_array[12] =
 {
         "Smile :D",
         "10 Deep Breaths",
         "Relax Muscles",
         "Stretch",
         "Drink Water",
-        "10 PushUps"
+        "10 PushUps",
+        "Moistu-rise",
         "Touch Grass",
         "Eat Fruit",
         "Short Walk",
-        "Brew Tea",
+        "Oil up that Bio",
+        "Brew Tea"
 };
 
 /* Create two task objects */
@@ -158,8 +168,12 @@ uint16_t nCyan   = matrix.color444(0, 15, 15);
 uint16_t nPurple = matrix.color444(15, 0, 15);
 uint16_t nWhite  = matrix.color444(15, 15, 15);
 
-/* Setting up the Clock timer */
-Ticker oTimeTicker(causeTime, 1000U);
+/* Setting up the Clock ticker & nighttime ticker */
+Ticker oTimeTicker(causeTime, MILLI_SECOND);
+Ticker oNightTicker(causeNightTime, 10*MILLI_MINUTE, 0, MILLIS);
+
+/* Bool to track if it's currently night-time */
+static bool bIsNightTime = false;
 
 /*=== F U N C T I O N S ===*/
 
@@ -185,7 +199,6 @@ void setup()
 
     /* Begin LED matrix */
     matrix.begin();
-    printRainbowBitmap(youre_done_bitmap, 250U);
 
     /* Blanking & Text configuration */
     matrix.fillScreen(nBlack);
@@ -199,7 +212,18 @@ void setup()
 //        removeCircularSegment(0U, 8U, 16U, 16U, i);
 //    }
 
+    /* Draw the essential characters onto the panel */
     drawDateAndTimeChars();
+
+    /* Start the Core 0 Time-tracking Ticker */
+    oTimeTicker.start();
+    /* Get the time for the nighttime timer from timeapi.io */
+    GetAPIRequestJSON(ksTimeRequest);
+    /* Start the Core 0 Night time Ticker */
+    oNightTicker.start();
+    /* Schedule the next ticker call to 23:00 or now, if it's already nighttime */
+    int32_t nTimeTilNight = ELEVEN_PM - ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
+    oNightTicker.interval((nTimeTilNight > 0) ? (nTimeTilNight) : (API_PADDING));
 
     /* Assigning tasks to each core */
     xTaskCreatePinnedToCore(core0Loop,  /* Function to implement the task */
@@ -209,9 +233,8 @@ void setup()
                             2,          /* Priority of the task */
                             &Task1,     /* Task handle. */
                             CORE_0);    /* Core where the task should run */
-    /* Start the Core 0 Time-tracking Ticker */
-    oTimeTicker.start();
     xTaskCreatePinnedToCore(core1Loop, "AffirmTask", 5000, NULL, 2, &Task2, CORE_1);
+
 }
 
 void loop()
@@ -223,6 +246,25 @@ void core0Loop(void *unused)
     for(;;)
     {
         oTimeTicker.update();
+        /* Update the night timer during the day */
+        oNightTicker.update();
+        if (bIsNightTime)
+        {
+            /* Gain exclusive access to the matrix, portMAX_DELAY = ~7 weeks */
+            xSemaphoreTake(oLEDMatrixMutex, portMAX_DELAY);
+            /* Turn off the panel during the night */
+            matrix.fillScreen(nBlack);
+            while (bIsNightTime)
+            {
+                oNightTicker.update();
+                delay(1000);
+            }
+            /* Relinquish exclusive access to the matrix */
+            xSemaphoreGive(oLEDMatrixMutex);
+            /* Get the time for the nighttime timer from timeapi.io */
+            GetAPIRequestJSON(ksTimeRequest);
+            blankAndDrawTime();
+        }
         delay(1);
     }
 }
@@ -244,9 +286,31 @@ void causeTime()
     /* Get the time and date from timeapi.io */
     GetAPIRequestJSON(ksTimeRequest);
     /* Schedule the next update for just after the next minute */
-    oTimeTicker.interval(MILLI_MINUTE - (MILLI * doc["seconds"].as<int>()) + API_PADDING);
+    oTimeTicker.interval(MILLI_MINUTE - (MILLI_SECOND * doc["seconds"].as<int>()) + API_PADDING);
     /* Set the time and date on the display */
     setDateAndTime();
+}
+
+void causeNightTime()
+{
+    /* Flip the state from day to night */
+    bIsNightTime = !bIsNightTime;
+    /* Set the ticker, based on if it's now nighttime or day time */
+    uint32_t nTimeTilNextCycle;
+    if (bIsNightTime)
+    {
+        /* Schedule the next ticker call to at 8:00 */
+        int32_t nTimeTilEight = ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
+        nTimeTilEight = (nTimeTilEight >= ELEVEN_PM) ? (nTimeTilEight - (24 * MILLI_HOUR)) : (nTimeTilEight);
+        nTimeTilNextCycle = EIGHT_AM - nTimeTilEight;
+        oNightTicker.interval(nTimeTilNextCycle);
+    }
+    else
+    {
+        /* Schedule the next ticker call to at 23:00 */
+        nTimeTilNextCycle = ELEVEN_PM - ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
+        oNightTicker.interval((nTimeTilNextCycle > (24U * MILLI_HOUR)) ? (API_PADDING) : (nTimeTilNextCycle));
+    }
 }
 
 void drawDateAndTimeChars()
@@ -377,13 +441,7 @@ void setDateAndTime()
         /* Blank the screen & print the celebration */
         matrix.fillScreen(nBlack);
         printRainbowBitmap(youre_done_bitmap, 300U);
-        /* Blank the screen & reprint the current date & time */
-        matrix.fillScreen(nBlack);
-        drawDateAndTimeChars();
-        printToScreen(LengthenStrings(sNewDay), nYellow, 2U, ROW_0, 0U);
-        printToScreen(LengthenStrings(sNewMonth), nYellow, 2U, ROW_0, TEXT_WIDTH*3U-4U);
-        printToScreen(LengthenStrings(sNewHour), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*5U+4);
-        printToScreen(LengthenStrings(sNewMin), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*2U);
+        blankAndDrawTime();
         /* Update stored variables */
         sPreviousDay = sNewDay;
         sPreviousMonth = sNewMonth;
@@ -396,13 +454,7 @@ void setDateAndTime()
         /* Blank the screen & print the celebration */
         matrix.fillScreen(nBlack);
         printRainbowBitmap(lunch_time_bitmap, 300U);
-        /* Blank the screen & reprint the current date & time */
-        matrix.fillScreen(nBlack);
-        drawDateAndTimeChars();
-        printToScreen(LengthenStrings(sNewDay), nYellow, 2U, ROW_0, 0U);
-        printToScreen(LengthenStrings(sNewMonth), nYellow, 2U, ROW_0, TEXT_WIDTH*3U-4U);
-        printToScreen(LengthenStrings(sNewHour), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*5U+4);
-        printToScreen(LengthenStrings(sNewMin), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*2U);
+        blankAndDrawTime();
         /* Update stored variables */
         sPreviousDay = sNewDay;
         sPreviousMonth = sNewMonth;
@@ -437,6 +489,17 @@ void setDateAndTime()
             sPreviousMin = sNewMin;
         }
     }
+}
+
+void blankAndDrawTime()
+{
+    /* Blank the screen & reprint the current date & time */
+    matrix.fillScreen(nBlack);
+    drawDateAndTimeChars();
+    printToScreen(LengthenStrings(String(doc["day"].as<int>())), nYellow, 2U, ROW_0, 0U);
+    printToScreen(LengthenStrings(String(doc["month"].as<int>())), nYellow, 2U, ROW_0, TEXT_WIDTH*3U-4U);
+    printToScreen(LengthenStrings(String(doc["hour"].as<int>())), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*5U+4);
+    printToScreen(LengthenStrings(String(doc["minute"].as<int>())), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*2U);
 }
 
 uint8_t compareStrings(String Str1, String Str2)

@@ -34,3 +34,5 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
     - [ ] Add animations counting down the time left to complete a task.
     - [ ] Decide on whether to randomise tasks or have a schedule.
         - [ ] Implement Decision. 
+- [x] Add a night-mode screen turn off.
+  - [ ] Implement a deep sleep until next morning.
