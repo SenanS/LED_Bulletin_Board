@@ -70,6 +70,15 @@ enum ESP32Cores {
     CORE_1,
 };
 
+/*=== S T R U C T S ===*/
+
+typedef struct TODO_TASKS {
+    String      sLine1;             /* Text line 1 of the task */
+    String      sLine2;             /* Text line 2 of the task */
+    uint32_t    nMinsToComplete;    /* Time it takes to Complete (in minutes) */
+    int8_t      nNumRepeats;        /* Number of times this can repeat in a day, (-1 infinite) */
+} todo_tasks;
+
 /*=== D A T A ===*/
 
 const unsigned char youre_done_bitmap [] PROGMEM =
@@ -119,21 +128,35 @@ const unsigned char* all_bitmaps_array[2] =
     lunch_time_bitmap
 };
 
-const String tasks_array[13] =
+const todo_tasks kaoTasksArray[13U] =
 {
-        "Smile :D",
-        "10 Deep Breaths",
-        "Relax Muscles",
-        "Stretch",
-        "Drink Water",
-        "10 PushUps",
-        "Moistu-rise",
-        "Touch Grass",
-        "Eat Fruit",
-        "Short Walk",
-        "Oil up that Bio",
-        "Brew Tea",
-        "Sit Up Straight"
+    {
+        " Smile",   "  :D",     3U,  -1
+    }, {
+        "10 Deep",  "Breaths",  3U,  -1
+    }, {
+        " Relax",   "Muscles",  3U,  -1
+    }, {
+        "Stretch",  "   :)",    3U,  -1
+    }, {
+        " Sit Up",  "Straight", 3U,  -1
+    }, {
+        "  Drink",  "  Water",  5U,  -1
+    }, {
+        "Moistur-", "ise  :@",  5U,  2
+    }, {
+        "   10",    "Push-Ups", 7U,  2
+    }, {
+        "  Touch",  "  Grass",  7U,  2
+    }, {
+        "   Eat",   "  Fruit",  7U,  2
+    }, {
+        " Oil Up",  "That Bio", 7U,  1
+    }, {
+        "  Brew",   "  Tea",    10U, 1
+    }, {
+        "  Short",  "  Walk",   15U, 1
+    }
 };
 
 /* Create two task objects */
@@ -168,6 +191,7 @@ uint16_t nYellow = matrix.color444(15, 15, 0);
 uint16_t nCyan   = matrix.color444(0, 15, 15);
 uint16_t nPurple = matrix.color444(15, 0, 15);
 uint16_t nWhite  = matrix.color444(15, 15, 15);
+uint16_t nTODO   = matrix.color444(0, 5, 15);
 
 /* Setting up the Clock ticker & nighttime ticker */
 Ticker oTimeTicker(causeTime, MILLI_SECOND);
@@ -239,6 +263,7 @@ void loop()
 
 void core0Loop(void *unused)
 {
+    uint8_t i = 0;
     /* Core 0 loop */
     for(;;)
     {
@@ -246,7 +271,16 @@ void core0Loop(void *unused)
         oTimeTicker.update();
         /* Update the night timer during the day */
         oNightTicker.update();
-        delay(1);
+
+        if (i == 13U)
+        {
+            i = 0U;
+        }
+        printToScreen(kaoTasksArray[i].sLine1, nTODO, 8U, ROW_1*TEXT_HEIGHT, 17U);
+        printToScreen(kaoTasksArray[i].sLine2, nTODO, 8U, ROW_2*TEXT_HEIGHT, 17U);
+
+        i++;
+        delay(2000U);
     }
 }
 

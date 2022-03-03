@@ -30,8 +30,11 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
     - [ ] Set up filter so as not to display the same stories multiple times a day.
 - [ ] Research Weather API.
     - [ ] Add animation/ picture of current/projected weather.
-- [ ] Create a list of de-stressing tasks/ To-Dos (eg. drink water, stretch, make tea, short walk, etc.).
-    - [ ] Add animations counting down the time left to complete a task.
+- [x] Create a list of de-stressing tasks/ To-Dos (eg. drink water, stretch, make tea, short walk, etc.).
+    - [x] Display task text in TODO area (see image above).
+      - [x] Figure out text positioning.
+    - [ ] Add general a animation counting down the time left to complete a task.
+    - [ ] Add special animations counting down the time left to complete specific tasks.
     - [ ] Decide on whether to randomise tasks or have a schedule.
         - [ ] Implement Decision. 
 - [x] Add a night-mode screen turn off.
