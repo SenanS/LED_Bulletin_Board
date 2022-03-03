@@ -35,4 +35,4 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
     - [ ] Decide on whether to randomise tasks or have a schedule.
         - [ ] Implement Decision. 
 - [x] Add a night-mode screen turn off.
-  - [ ] Implement a deep sleep until next morning.
+  - [x] Implement a deep sleep until next morning.

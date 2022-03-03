@@ -119,7 +119,7 @@ const unsigned char* all_bitmaps_array[2] =
     lunch_time_bitmap
 };
 
-const String tasks_array[12] =
+const String tasks_array[13] =
 {
         "Smile :D",
         "10 Deep Breaths",
@@ -132,7 +132,8 @@ const String tasks_array[12] =
         "Eat Fruit",
         "Short Walk",
         "Oil up that Bio",
-        "Brew Tea"
+        "Brew Tea",
+        "Sit Up Straight"
 };
 
 /* Create two task objects */
@@ -171,9 +172,6 @@ uint16_t nWhite  = matrix.color444(15, 15, 15);
 /* Setting up the Clock ticker & nighttime ticker */
 Ticker oTimeTicker(causeTime, MILLI_SECOND);
 Ticker oNightTicker(causeNightTime, 10*MILLI_MINUTE, 0, MILLIS);
-
-/* Bool to track if it's currently night-time */
-static bool bIsNightTime = false;
 
 /*=== F U N C T I O N S ===*/
 
@@ -219,7 +217,7 @@ void setup()
     oTimeTicker.start();
     /* Get the time for the nighttime timer from timeapi.io */
     GetAPIRequestJSON(ksTimeRequest);
-    /* Start the Core 0 Night time Ticker */
+    /* Start the Core 0 nighttime Ticker */
     oNightTicker.start();
     /* Schedule the next ticker call to 23:00 or now, if it's already nighttime */
     int32_t nTimeTilNight = ELEVEN_PM - ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
@@ -234,7 +232,6 @@ void setup()
                             &Task1,     /* Task handle. */
                             CORE_0);    /* Core where the task should run */
     xTaskCreatePinnedToCore(core1Loop, "AffirmTask", 5000, NULL, 2, &Task2, CORE_1);
-
 }
 
 void loop()
@@ -245,26 +242,10 @@ void core0Loop(void *unused)
     /* Core 0 loop */
     for(;;)
     {
+        /* Update the time til the next minute */
         oTimeTicker.update();
         /* Update the night timer during the day */
         oNightTicker.update();
-        if (bIsNightTime)
-        {
-            /* Gain exclusive access to the matrix, portMAX_DELAY = ~7 weeks */
-            xSemaphoreTake(oLEDMatrixMutex, portMAX_DELAY);
-            /* Turn off the panel during the night */
-            matrix.fillScreen(nBlack);
-            while (bIsNightTime)
-            {
-                oNightTicker.update();
-                delay(1000);
-            }
-            /* Relinquish exclusive access to the matrix */
-            xSemaphoreGive(oLEDMatrixMutex);
-            /* Get the time for the nighttime timer from timeapi.io */
-            GetAPIRequestJSON(ksTimeRequest);
-            blankAndDrawTime();
-        }
         delay(1);
     }
 }
@@ -293,24 +274,19 @@ void causeTime()
 
 void causeNightTime()
 {
-    /* Flip the state from day to night */
-    bIsNightTime = !bIsNightTime;
-    /* Set the ticker, based on if it's now nighttime or day time */
+    /* Nighty-Night */
+    int32_t nTimeTilWake;
     uint32_t nTimeTilNextCycle;
-    if (bIsNightTime)
-    {
-        /* Schedule the next ticker call to at 8:00 */
-        int32_t nTimeTilEight = ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
-        nTimeTilEight = (nTimeTilEight >= ELEVEN_PM) ? (nTimeTilEight - (24 * MILLI_HOUR)) : (nTimeTilEight);
-        nTimeTilNextCycle = EIGHT_AM - nTimeTilEight;
-        oNightTicker.interval(nTimeTilNextCycle);
-    }
-    else
-    {
-        /* Schedule the next ticker call to at 23:00 */
-        nTimeTilNextCycle = ELEVEN_PM - ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
-        oNightTicker.interval((nTimeTilNextCycle > (24U * MILLI_HOUR)) ? (API_PADDING) : (nTimeTilNextCycle));
-    }
+
+    /* Schedule the next ticker call to at 8:00 */
+    nTimeTilWake = ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
+    /* Check if it's the same day as the sleep time */
+    nTimeTilWake = (nTimeTilWake >= ELEVEN_PM) ? (nTimeTilWake - (24 * MILLI_HOUR)) : (nTimeTilWake);
+    nTimeTilNextCycle = EIGHT_AM - nTimeTilWake;
+    /* Time in microseconds */
+    esp_sleep_enable_timer_wakeup(nTimeTilNextCycle*1000U);
+    esp_deep_sleep_start();
+
 }
 
 void drawDateAndTimeChars()
