@@ -228,11 +228,18 @@ void setup()
     matrix.setTextWrap(false); // Don't wrap at end of line - will do ourselves
 
     /* Draw a pizza (with 6 slices) in the middle-left area of the LED matrix */
-//    double nFraction = 1.0 / 6.0, nCircuit = 360.0;
 //    createPizza(8U, 16U);
+//    double nFraction = 1.0 / 6.0, nCircuit = 360.0;
 //    for (double i = 0.0; i <= nCircuit; i = i + nFraction) {
 //        removeCircularSegment(0U, 8U, 16U, 16U, i);
 //    }
+//    matrix.fillRect(0U, 8U, 17U, 16U, nBlack);
+    uint16_t nGrey = matrix.color444(4U, 4U, 4U);
+    uint16_t nBrown = matrix.color444(2U, 2U, 0);
+    matrix.drawLine(0U, 8U, 16U, 8U, nBrown);
+    matrix.drawLine(0U, 23U, 16U, 23U, nBrown);
+    matrix.fillTriangle(0U, 9U, 16U, 9U, 8U, 16U, nGrey);
+    matrix.fillTriangle(0U, 22U, 16U, 22U, 8U, 15U, nGrey);
 
     /* Draw the essential characters onto the panel */
     drawDateAndTimeChars();
@@ -272,15 +279,14 @@ void core0Loop(void *unused)
         /* Update the night timer during the day */
         oNightTicker.update();
 
-        if (i == 13U)
-        {
-            i = 0U;
-        }
-        printToScreen(kaoTasksArray[i].sLine1, nTODO, 8U, ROW_1*TEXT_HEIGHT, 17U);
-        printToScreen(kaoTasksArray[i].sLine2, nTODO, 8U, ROW_2*TEXT_HEIGHT, 17U);
-
-        i++;
-        delay(2000U);
+//        if (i == 13U)
+//        {
+//            i = 0U;
+//        }
+//        printToScreen(kaoTasksArray[i].sLine1, nTODO, 8U, ROW_1*TEXT_HEIGHT, 17U);
+//        printToScreen(kaoTasksArray[i].sLine2, nTODO, 8U, ROW_2*TEXT_HEIGHT, 17U);
+//        i++;
+//        delay(2000U);
     }
 }
 
@@ -311,6 +317,18 @@ void causeNightTime()
     /* Nighty-Night */
     int32_t nTimeTilWake;
     uint32_t nTimeTilNextCycle;
+
+    /* Blank the screen & print the nighttime message */
+    matrix.fillScreen(nBlack);
+    String nNightTimeMessageRow1 = "Night";
+    String nNightTimeMessageRow2 = "  :)";
+    matrix.setTextSize(2);
+    /* Offset messages to give 3D effect */
+    printToScreen(nNightTimeMessageRow1, nRed, 0U, ROW_0*TEXT_HEIGHT+1U, 2U);
+    printToScreen(nNightTimeMessageRow2, nRed, 0U, ROW_2*TEXT_HEIGHT+1U, 2U);
+    printToScreen(nNightTimeMessageRow1, nPurple, 0U, ROW_0*TEXT_HEIGHT, 3U);
+    printToScreen(nNightTimeMessageRow2, nPurple, 0U, ROW_2*TEXT_HEIGHT, 3U);
+    delay(5000U);
 
     /* Schedule the next ticker call to at 8:00 */
     nTimeTilWake = ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));

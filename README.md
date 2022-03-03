@@ -9,6 +9,7 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
 ![pixil-frame-0(3)](https://user-images.githubusercontent.com/30498489/155784806-4140f807-80ad-4bb5-af04-aa672b66019f.png)
 	
 ## Feature List
+- [x] Give project a name: <h1><center>Panela</center></h1>
 - [x] Research time/ date API.
   - [x] Get time/ date API working.
     - [x] Display current time & date on the panel.
@@ -33,9 +34,10 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
 - [x] Create a list of de-stressing tasks/ To-Dos (eg. drink water, stretch, make tea, short walk, etc.).
     - [x] Display task text in TODO area (see image above).
       - [x] Figure out text positioning.
-    - [ ] Add general a animation counting down the time left to complete a task.
+    - [ ] Add a general animation counting down the time left to complete a task.
     - [ ] Add special animations counting down the time left to complete specific tasks.
     - [ ] Decide on whether to randomise tasks or have a schedule.
         - [ ] Implement Decision. 
 - [x] Add a night-mode screen turn off.
   - [x] Implement a deep sleep until next morning.
+  - [x] Add nighttime message.
