@@ -19,6 +19,7 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
     - [ ] Add a work ticker to avoid if statements.
   - [x] For lunch-time (13:00 detected).
     - [ ] Add a lunch ticker to avoid if statements.
+  - [ ] Add a morning message
 - [x] Research affirmations API.
   - [x] Set up affirmations.dev API.
     - [x] Display affirmations on the panel.
@@ -30,8 +31,9 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
     - [ ] Set up a ticker to get the news every 15 mins.
     - [ ] Set up filter so as not to display the same stories multiple times a day.
 - [ ] Research Weather API.
+    - [ ] Weather graphic in middle (anim?)
     - [ ] Add animation/ picture of current/projected weather.
-- [x] Create a list of de-stressing tasks/ To-Dos (eg. drink water, stretch, make tea, short walk, etc.).
+- [ ] Create a list of de-stressing tasks/ To-Dos (eg. drink water, stretch, make tea, short walk, etc.).
     - [x] Display task text in TODO area (see image above).
       - [x] Figure out text positioning.
     - [ ] Add a general animation counting down the time left to complete a task.
