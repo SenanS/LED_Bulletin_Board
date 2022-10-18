@@ -21,16 +21,16 @@
 #define CAROUSEL_DELAY  15U
 /* Converter for milliseconds */
 #define MILLI_SECOND    1000U
-/* One Milli-minute (60 seconds in milliseconds)*/
+/* One Milli-minute (60 seconds in milliseconds) */
 #define MILLI_MINUTE    60000U
-/* One Milli-hour (60 minutes in milliminutes)*/
+/* One Milli-hour (60 minutes in milliminutes) */
 #define MILLI_HOUR      3600000U
-/* 08:00 in milliseconds */
-#define EIGHT_AM        28800000U
+/* 07:00 in milliseconds */
+#define WAKE_TIME       25200000U
 /* 23:00 in milliseconds */
-#define ELEVEN_PM       82800000U
-/* 100 millisecond padding for API calls */
-#define API_PADDING     100U
+#define SLEEP_TIME      82800000U
+/* 100 millisecond padding for API calls & Tickers */
+#define TIME_PADDING    100U
 
 
 /*=== P R O T O T Y P E S ===*/
@@ -147,7 +147,7 @@ const todo_tasks kaoTasksArray[13U] =
     }, {
         "   10",    "Push-Ups", 7U,  2
     }, {
-        "  Touch",  "  Grass",  7U,  2
+        "  Touch",  "  Green",  7U,  2
     }, {
         "   Eat",   "  Fruit",  7U,  2
     }, {
@@ -195,7 +195,7 @@ uint16_t nTODO   = matrix.color444(0, 5, 15);
 
 /* Setting up the Clock ticker & nighttime ticker */
 Ticker oTimeTicker(causeTime, MILLI_SECOND);
-Ticker oNightTicker(causeNightTime, 10*MILLI_MINUTE, 0, MILLIS);
+Ticker oNightTicker(causeNightTime, 10*MILLI_MINUTE, 1, MILLIS);
 
 /*=== F U N C T I O N S ===*/
 
@@ -244,15 +244,15 @@ void setup()
     /* Draw the essential characters onto the panel */
     drawDateAndTimeChars();
 
-    /* Start the Core 0 Time-tracking Ticker */
+    /* Start the periodic Core 0 Time-tracking Ticker */
     oTimeTicker.start();
     /* Get the time for the nighttime timer from timeapi.io */
     GetAPIRequestJSON(ksTimeRequest);
     /* Start the Core 0 nighttime Ticker */
     oNightTicker.start();
-    /* Schedule the next ticker call to 23:00 or now, if it's already nighttime */
-    int32_t nTimeTilNight = ELEVEN_PM - ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
-    oNightTicker.interval((nTimeTilNight > 0) ? (nTimeTilNight) : (API_PADDING));
+    /* Schedule the next ticker call to at sleep time or now, if it's already nighttime */
+    int32_t nTimeTilNight = SLEEP_TIME - ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
+    oNightTicker.interval((nTimeTilNight > 0) ? (nTimeTilNight) : (TIME_PADDING));
 
     /* Assigning tasks to each core */
     xTaskCreatePinnedToCore(core0Loop,  /* Function to implement the task */
@@ -282,6 +282,7 @@ void core0Loop(void *unused)
         oTimeTicker.update();
         /* Update the night timer during the day */
         oNightTicker.update();
+        delay(1);
 
 //        if (i == 13U)
 //        {
@@ -318,7 +319,7 @@ void causeTime()
     /* Get the time and date from timeapi.io */
     GetAPIRequestJSON(ksTimeRequest);
     /* Schedule the next update for just after the next minute */
-    oTimeTicker.interval(MILLI_MINUTE - (MILLI_SECOND * doc["seconds"].as<int>()) + API_PADDING);
+    oTimeTicker.interval(MILLI_MINUTE - (MILLI_SECOND * doc["seconds"].as<int>()) + TIME_PADDING);
     /* Set the time and date on the display */
     setDateAndTime();
 }
@@ -344,15 +345,15 @@ void causeNightTime()
     printToScreen(nNightTimeMessageRow2, nPurple, 0U, ROW_2*TEXT_HEIGHT, 3U);
     delay(5000U);
 
-    /* Schedule the next ticker call to at 8:00 */
+    /* Get the current time in milliseconds */
     nTimeTilWake = ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
-    /* Check if it's the same day as the sleep time */
-    nTimeTilWake = (nTimeTilWake >= ELEVEN_PM) ? (nTimeTilWake - (24 * MILLI_HOUR)) : (nTimeTilWake);
-    nTimeTilNextCycle = EIGHT_AM - nTimeTilWake;
+    /* Get the offset between now & wakeup time : assert if it's the day before or the same day as wakeup time */
+    nTimeTilWake = (nTimeTilWake > WAKE_TIME) ? (nTimeTilWake - (24U * MILLI_HOUR)) : (nTimeTilWake);
+    /* Schedule the ESP wakeup at WAKE_TIME */
+    nTimeTilNextCycle = WAKE_TIME - nTimeTilWake;
     /* Time in microseconds */
     esp_sleep_enable_timer_wakeup(nTimeTilNextCycle*1000U);
     esp_deep_sleep_start();
-
 }
 
 /**
