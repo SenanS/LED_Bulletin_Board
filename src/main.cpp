@@ -335,16 +335,20 @@ void causeNightTime()
     uint32_t nTimeTilNextCycle;
 
     /* Blank the screen & print the nighttime message */
+    xSemaphoreTake(oLEDMatrixMutex, portMAX_DELAY);
     matrix.fillScreen(nBlack);
     String nNightTimeMessageRow1 = "Night";
     String nNightTimeMessageRow2 = "  :)";
     matrix.setTextSize(2);
+    xSemaphoreGive(oLEDMatrixMutex);
     /* Offset messages to give 3D effect */
     printToScreen(nNightTimeMessageRow1, nRed, 0U, ROW_0*TEXT_HEIGHT+1U, 2U);
     printToScreen(nNightTimeMessageRow2, nRed, 0U, ROW_2*TEXT_HEIGHT+1U, 2U);
     printToScreen(nNightTimeMessageRow1, nPurple, 0U, ROW_0*TEXT_HEIGHT, 3U);
     printToScreen(nNightTimeMessageRow2, nPurple, 0U, ROW_2*TEXT_HEIGHT, 3U);
+    xSemaphoreTake(oLEDMatrixMutex, portMAX_DELAY);
     delay(5000U);
+    xSemaphoreGive(oLEDMatrixMutex);
 
     /* Get the current time in milliseconds */
     nTimeTilWake = ((MILLI_HOUR * doc["hour"].as<int>()) + (MILLI_MINUTE * doc["minute"].as<int>()));
@@ -519,7 +523,7 @@ void setDateAndTime()
     {
         /* Blank the screen & print the celebration */
         matrix.fillScreen(nBlack);
-        printRainbowBitmap(youre_done_bitmap, 300U);
+        printRainbowBitmap(youre_done_bitmap, 3000U);
         blankAndDrawTime();
         /* Update stored variables */
         sPreviousDay = sNewDay;
@@ -532,7 +536,7 @@ void setDateAndTime()
     {
         /* Blank the screen & print the celebration */
         matrix.fillScreen(nBlack);
-        printRainbowBitmap(lunch_time_bitmap, 300U);
+        printRainbowBitmap(lunch_time_bitmap, 3000U);
         blankAndDrawTime();
         /* Update stored variables */
         sPreviousDay = sNewDay;
@@ -544,26 +548,26 @@ void setDateAndTime()
         /* Regular update of date & time */
         if (compareStrings(sPreviousDay, sNewDay) != 0U) {
             /* Blank & set the day zone */
-            printToScreen(LengthenStrings(sNewDay), nYellow, 2U, ROW_0, 0U);
+            printToScreen(lengthenStrings(sNewDay), nYellow, 2U, ROW_0, 0U);
             /* Update the saved value */
             sPreviousDay = sNewDay;
         }
         if (compareStrings(sPreviousMonth, sNewMonth) != 0U) {
             /* Blank & set the month zone */
-            printToScreen(LengthenStrings(sNewMonth), nYellow, 2U, ROW_0, TEXT_WIDTH * 3U - 4U);
+            printToScreen(lengthenStrings(sNewMonth), nYellow, 2U, ROW_0, TEXT_WIDTH * 3U - 4U);
             /* Update the saved value */
             sPreviousMonth = sNewMonth;
         }
 
         if (compareStrings(sPreviousHour, sNewHour) != 0U) {
             /* Blank & set the hour zone */
-            printToScreen(LengthenStrings(sNewHour), nCyan, 2U, ROW_0, 64U - TEXT_WIDTH * 5U + 4);
+            printToScreen(lengthenStrings(sNewHour), nCyan, 2U, ROW_0, 64U - TEXT_WIDTH * 5U + 4);
             /* Update the saved value */
             sPreviousHour = sNewHour;
         }
         if (compareStrings(sPreviousMin, sNewMin) != 0U) {
             /* Blank & set the minute zone */
-            printToScreen(LengthenStrings(sNewMin), nCyan, 2U, ROW_0, 64U - TEXT_WIDTH * 2U);
+            printToScreen(lengthenStrings(sNewMin), nCyan, 2U, ROW_0, 64U - TEXT_WIDTH * 2U);
             /* Update the saved value */
             sPreviousMin = sNewMin;
         }
@@ -578,10 +582,10 @@ void blankAndDrawTime()
     /* Blank the screen & reprint the current date & time */
     matrix.fillScreen(nBlack);
     drawDateAndTimeChars();
-    printToScreen(LengthenStrings(String(doc["day"].as<int>())), nYellow, 2U, ROW_0, 0U);
-    printToScreen(LengthenStrings(String(doc["month"].as<int>())), nYellow, 2U, ROW_0, TEXT_WIDTH*3U-4U);
-    printToScreen(LengthenStrings(String(doc["hour"].as<int>())), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*5U+4);
-    printToScreen(LengthenStrings(String(doc["minute"].as<int>())), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*2U);
+    printToScreen(lengthenStrings(String(doc["day"].as<int>())), nYellow, 2U, ROW_0, 0U);
+    printToScreen(lengthenStrings(String(doc["month"].as<int>())), nYellow, 2U, ROW_0, TEXT_WIDTH * 3U - 4U);
+    printToScreen(lengthenStrings(String(doc["hour"].as<int>())), nCyan, 2U, ROW_0, 64U - TEXT_WIDTH * 5U + 4);
+    printToScreen(lengthenStrings(String(doc["minute"].as<int>())), nCyan, 2U, ROW_0, 64U - TEXT_WIDTH * 2U);
 }
 
 /**
