@@ -47,7 +47,7 @@ long HSBtoRGB(float _hue);
 void setDateAndTime();
 void blankAndDrawTime();
 uint8_t compareStrings(String Str1, String Str2);
-String LengthenStrings(String Str1);
+String lengthenStrings(String Str1);
 void cycleMessage(const String ksMessage, const uint8_t knRow, const uint32_t knTextDelay);
 void GetAPIRequestJSON(const String ksURL);
 void createPizza(uint8_t nXMid, uint8_t nYMid);
@@ -266,8 +266,12 @@ void setup()
 }
 
 void loop()
-{}
+{/* Empty Loop as each core has an independent loop */}
 
+/**
+ * Core 0 main loop - Used to show time & tasks
+ * @param unused
+ */
 void core0Loop(void *unused)
 {
     uint8_t i = 0;
@@ -290,6 +294,10 @@ void core0Loop(void *unused)
     }
 }
 
+/**
+ * Core 1 main loop - Used for API requests & Carousel
+ * @param unused
+ */
 void core1Loop(void *unused)
 {
     /* Core 1 loop */
@@ -302,6 +310,9 @@ void core1Loop(void *unused)
     }
 }
 
+/**
+ * Requests the current time & date, shows it on display and schedules next update
+ */
 void causeTime()
 {
     /* Get the time and date from timeapi.io */
@@ -312,6 +323,9 @@ void causeTime()
     setDateAndTime();
 }
 
+/**
+ * Power saving nighttime sequence; blanks screen, deep-sleeps ESP32 & sets wakeup time
+ */
 void causeNightTime()
 {
     /* Nighty-Night */
@@ -341,6 +355,9 @@ void causeNightTime()
 
 }
 
+/**
+ * Draws accessory datetime characters on matrix
+ */
 void drawDateAndTimeChars()
 {
     /* Gain exclusive access to the matrix */
@@ -355,6 +372,15 @@ void drawDateAndTimeChars()
     xSemaphoreGive(oLEDMatrixMutex);
 }
 
+/**
+ * Prints message to the matrix display
+ * @param ksMessage   Message to display
+ * @param knColour    Font colour
+ * @param knNumChars  Message length
+ * @param knRow       Row to print on
+ * @param knCursorCol Where in column to print
+ * @param knClearCol  Column to clear from.
+ */
 void printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCursorCol, const uint8_t knClearCol)
 {
     /* Gain exclusive access to the matrix */
@@ -369,12 +395,25 @@ void printToScreen(const String ksMessage, const uint16_t knColour, const uint8_
     xSemaphoreGive(oLEDMatrixMutex);
 }
 
+/**
+ * (Overload) Prints message to the matrix display
+ * @param ksMessage   Message to display
+ * @param knColour    Font colour
+ * @param knNumChars  Message length
+ * @param knRow       Row to print on
+ * @param knCursorCol Where in column to print, which is also cleared
+ */
 void inline printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCol)
 {
     /* Overloaded function with one column value */
     printToScreen(ksMessage, knColour, knNumChars, knRow, knCol, knCol);
 }
 
+/**
+ * Prints bitmap in a rainbow fashion
+ * @param bitmap  Bitmap to print
+ * @param nCycles How many times the display should rainbow cycle
+ */
 void printRainbowBitmap(const unsigned char bitmap[], const uint16_t nCycles)
 {
     /* Gain exclusive access to the matrix */
@@ -385,6 +424,7 @@ void printRainbowBitmap(const unsigned char bitmap[], const uint16_t nCycles)
 
     for (uint16_t i = 0U; i < nCycles; i++)
     {
+        /* Draw the bitmap while shifting the hue */
         nColourPicked = HSBtoRGB((float(i%64U)/64U)*360.0);
         nColour = matrix.color444((nColourPicked >> 8U) & 0xFU, (nColourPicked >> 4U) & 0xFU, (nColourPicked) & 0xFU);
         matrix.drawBitmap(0U, 0U, bitmap, 64U, 32U, nColour);
@@ -395,6 +435,11 @@ void printRainbowBitmap(const unsigned char bitmap[], const uint16_t nCycles)
     xSemaphoreGive(oLEDMatrixMutex);
 }
 
+/**
+ * Converts Hue values to Red Green & Blue colour space
+ * @param _hue Hue
+ * @return     4-bit RGB values
+ */
 long HSBtoRGB(float _hue) {
     float red = 0.0;
     float green = 0.0;
@@ -452,6 +497,10 @@ long HSBtoRGB(float _hue) {
     return long((ired << 8) | (igreen << 4) | (iblue));
 }
 
+/**
+ * Sets data and time based on prior API request.
+ * Also Displays messages at lunch/ quittin' time(s)
+ */
 void setDateAndTime()
 {
     static String sPreviousDay="", sPreviousMonth="", sPreviousHour="", sPreviousMin="", sPreviousDoW="";
@@ -519,6 +568,9 @@ void setDateAndTime()
     }
 }
 
+/**
+ * Clears screen and redraws time & date
+ */
 void blankAndDrawTime()
 {
     /* Blank the screen & reprint the current date & time */
@@ -530,6 +582,13 @@ void blankAndDrawTime()
     printToScreen(LengthenStrings(String(doc["minute"].as<int>())), nCyan, 2U, ROW_0, 64U-TEXT_WIDTH*2U);
 }
 
+/**
+ * Compares 2 strings
+ * @param  Str1 String 1
+ * @param  Str2 String 2
+ * @return  0   : Strings equal
+ * @return <0|>0: Strings Unequal
+ */
 uint8_t compareStrings(String Str1, String Str2)
 {
     /* very simple string comparison funciton */
@@ -546,7 +605,12 @@ uint8_t compareStrings(String Str1, String Str2)
     return Str1[i] - Str2[i];
 }
 
-String LengthenStrings(String Str1)
+/**
+ * Adds leading zeros to single characters
+ * @param Str1 Unpadded String
+ * @return     Padded String
+ */
+String lengthenStrings(String Str1)
 {
     /* Used to add a leading zero to single character time measurements */
     if (Str1.length() == 1)
@@ -556,6 +620,12 @@ String LengthenStrings(String Str1)
     return Str1;
 }
 
+/**
+ * Creates a scrolling carousel displaying a given message/
+ * @param ksMessage   What message should be displayed
+ * @param knRow       What row to create the carousel on
+ * @param knTextDelay Delay between printing each letter (inversely proportional to carousel velocity)
+ */
 void cycleMessage(const String ksMessage, const uint8_t knRow, const uint32_t knTextDelay)
 {
     /* The length of the message in pixels/columns */
@@ -572,6 +642,10 @@ void cycleMessage(const String ksMessage, const uint8_t knRow, const uint32_t kn
     }
 }
 
+/**
+ * General get request to JSON
+ * @param ksURL target URL
+ */
 void GetAPIRequestJSON(const String ksURL)
 {
     //Initiate HTTP client
@@ -593,6 +667,74 @@ void GetAPIRequestJSON(const String ksURL)
     http.end();
 }
 
+/**
+ * Draws hourglass on matrix
+ * @param knLeftX  Leftmost x pos
+ * @param knTopY   Topmost y pos
+ * @param knWidth  Hourglass width
+ * @param knHeight Hourglass height
+ */
+void drawHourglass(const uint8_t knLeftX, const uint8_t knTopY, const uint8_t knWidth, const uint8_t knHeight)
+{
+    /* Gain exclusive access to the matrix */
+    xSemaphoreTake(oLEDMatrixMutex, portMAX_DELAY);
+    /* Draw the hourglass border */
+    matrix.drawFastHLine(knLeftX, knTopY, knWidth, nBrown);
+    matrix.drawFastHLine(knLeftX, knTopY+knHeight-1U, knWidth, nBrown);
+    /* Draw the glass in fast horizontal lines rather than slower triangles */
+    for (uint8_t i = 0; i < ((knHeight-1)/2)-1; i++)
+    {
+        matrix.drawFastHLine(knLeftX+1U+i, knTopY+1U+i, knWidth-2U*(i+1U), nGrey);
+        matrix.drawFastHLine(knLeftX+1U+i, knTopY+knHeight-i-2U, knWidth-2U*(i+1U), nGrey);
+    }
+    /* Draw centre horizontal line */
+    matrix.drawFastHLine(knLeftX+7U, knTopY+7U, 3U, nGrey);
+    /* Relinquish exclusive access to the matrix */
+    xSemaphoreGive(oLEDMatrixMutex);
+}
+
+/**
+ * Fills hourglass to a set level.
+ * @param knFillState state of hourglass
+ */
+void fillHourglass(const uint8_t knFillState)
+{
+    /* Gain exclusive access to the matrix */
+    xSemaphoreTake(oLEDMatrixMutex, portMAX_DELAY);
+
+    uint16_t nSand1 = matrix.color444(15U, 8U, 0);
+    uint16_t nSand2 = matrix.color444(5U, 1U, 0);
+
+    /* Draw the top glass full */
+    matrix.fillTriangle(8U, 16U, 5U, 13U, 11U, 13U, nSand1);
+    matrix.drawFastHLine(6U, 12U, 7U, nSand1);
+    matrix.drawFastHLine(7U, 11U, 5U, nSand1);
+    matrix.drawPixel(9U, 12U, nSand2);
+    matrix.drawPixel(10U, 12U, nSand2);
+    matrix.drawPixel(7U, 15U, nSand2);
+    matrix.drawPixel(9U, 14U, nSand2);
+
+    /* Draw the bottom glass full */
+    matrix.fillTriangle(8U, 18U, 12U, 22U, 4U, 22U, nSand1);
+    matrix.drawPixel(8U, 17U, nSand2);
+    matrix.drawPixel(7U, 19U, nSand2);
+    matrix.drawPixel(8U, 20U, nSand2);
+    matrix.drawPixel(10U, 22U, nSand2);
+
+    switch (knFillState) {
+        case 0U:
+        default:
+            break;
+    }
+    /* Relinquish exclusive access to the matrix */
+    xSemaphoreGive(oLEDMatrixMutex);
+}
+
+/**
+ * Creates Pizza graphic
+ * @param nXMid Pizza circle x origin
+ * @param nYMid Pizza circle y origin
+ */
 void createPizza(uint8_t nXMid, uint8_t nYMid)
 {
     /* Pizza "Colours" */
@@ -616,6 +758,14 @@ void createPizza(uint8_t nXMid, uint8_t nYMid)
     matrix.drawPixel(nXMid+1U,  nYMid+1U, nGreen);
 }
 
+/**
+ * Complex function to cut pizza
+ * @param nTopLeftCol Leftmost column of pizza
+ * @param nTopLeftRow Uppermost row of pizza
+ * @param nWidth      Pizza Width
+ * @param nHeight     Pizza Height
+ * @param nFraction   What angle the pizza should be cut at (radians)
+ */
 void removeCircularSegment(uint8_t nTopLeftCol, uint8_t nTopLeftRow, uint8_t nWidth, uint8_t nHeight, double nFraction)
 {
     double pi = 3.14159;
@@ -633,6 +783,14 @@ void removeCircularSegment(uint8_t nTopLeftCol, uint8_t nTopLeftRow, uint8_t nWi
     matrix.drawLine(xOrigin, yOrigin, xPos, yPos, nBlack);
 }
 
+/**
+ * Helper function to calculate coordinates of a point on a circle (pizza)
+ * @param x     TDC x
+ * @param y     TDC y
+ * @param ox    Origin x
+ * @param oy    Origin y
+ * @param theta Angle of rotation
+ */
 void rotateThroughTheta(uint8_t *x, uint8_t *y, uint8_t ox, uint8_t oy, double theta)
 {
     float px, py;
