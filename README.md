@@ -19,7 +19,7 @@ ESP32 controlled 64x32 LED matrix display panel, showing current time/date, news
     - [ ] Add a work ticker to avoid if statements.
   - [x] For lunch-time (13:00 detected).
     - [ ] Add a lunch ticker to avoid if statements.
-  - [ ] Add a morning message
+  - [ ] Add a morning message (7:00/9:00)
 - [x] Research affirmations API.
   - [x] Set up affirmations.dev API.
     - [x] Display affirmations on the panel.
