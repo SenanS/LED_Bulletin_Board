@@ -40,6 +40,8 @@ void core1Loop(void *unused);
 void causeTime();
 void causeNightTime();
 void drawDateAndTimeChars();
+void drawHourglass(const uint8_t knLeftX, const uint8_t knTopY, const uint8_t knWidth, const uint8_t knHeight);
+void fillHourglass(const uint8_t knFillState);
 void printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCursorCol, const uint8_t knClearCol);
 void inline printToScreen(const String ksMessage, const uint16_t knColour, const uint8_t knNumChars, const uint8_t knRow, const int knCol);
 void printRainbowBitmap(const unsigned char bitmap[], const uint16_t nCycles);
@@ -191,6 +193,8 @@ uint16_t nYellow = matrix.color444(15, 15, 0);
 uint16_t nCyan   = matrix.color444(0, 15, 15);
 uint16_t nPurple = matrix.color444(15, 0, 15);
 uint16_t nWhite  = matrix.color444(15, 15, 15);
+uint16_t nGrey = matrix.color444(4U, 4U, 4U);
+uint16_t nBrown = matrix.color444(2U, 2U, 0);
 uint16_t nTODO   = matrix.color444(0, 5, 15);
 
 /* Setting up the Clock ticker & nighttime ticker */
@@ -234,12 +238,9 @@ void setup()
 //        removeCircularSegment(0U, 8U, 16U, 16U, i);
 //    }
 //    matrix.fillRect(0U, 8U, 17U, 16U, nBlack);
-    uint16_t nGrey = matrix.color444(4U, 4U, 4U);
-    uint16_t nBrown = matrix.color444(2U, 2U, 0);
-    matrix.drawLine(0U, 8U, 16U, 8U, nBrown);
-    matrix.drawLine(0U, 23U, 16U, 23U, nBrown);
-    matrix.fillTriangle(0U, 9U, 16U, 9U, 8U, 16U, nGrey);
-    matrix.fillTriangle(0U, 22U, 16U, 22U, 8U, 15U, nGrey);
+
+    drawHourglass(0U,9U,17U, 15U);
+    fillHourglass(0U);
 
     /* Draw the essential characters onto the panel */
     drawDateAndTimeChars();
@@ -592,7 +593,7 @@ void blankAndDrawTime()
  */
 uint8_t compareStrings(String Str1, String Str2)
 {
-    /* very simple string comparison funciton */
+    /* very simple string comparison function */
     const uint8_t knMinSize = (Str1.length() > Str1.length()) ? (Str2.length()) : (Str1.length());
     if (knMinSize == 0)
     {
